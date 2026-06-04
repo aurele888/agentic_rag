@@ -28,5 +28,6 @@ watchdog
 keybert
 tensorrt
 docling==2.96.0
+docx2txt
 #open_webui
 #setuptools==81.0.0

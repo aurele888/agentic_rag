@@ -7,6 +7,8 @@ from langchain_community.document_loaders import (
     Docx2txtLoader,
     UnstructuredPowerPointLoader,
     UnstructuredCSVLoader,
+    TextLoader,
+    UnstructuredHTMLLoader,
     )
 from enum import Enum
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -20,6 +22,8 @@ class SupportedFileType (str, Enum):
     docx = ".docx"
     pptx = ".pptx"
     csv = ".csv"
+    txt = ".txt"
+    html = ".html"
 
 
 class DocumentProcessor:
@@ -54,6 +58,12 @@ class DocumentProcessor:
             elif extension == SupportedFileType.csv:
                 logger.info(f"Loading csv from {file_path}")
                 loader = UnstructuredCSVLoader(str(file_path))
+            elif extension == SupportedFileType.txt:
+                logger.info(f"Loading txt from {file_path}")
+                loader = TextLoader(str(file_path))
+            elif extension == SupportedFileType.html:
+                logger.info(f"Loading html from {file_path}")
+                loader = UnstructuredHTMLLoader(str(file_path))
             else:
                 raise ValueError("Unsurpported file type.")
             return loader.load()

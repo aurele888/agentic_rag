@@ -21,8 +21,8 @@ async def upload_pdf(
     """Upload and process a PDF file."""
     
     # if not file.filename.endswith('.pdf'):
-    if not any([file.filename.endswith(file.value) for file in SupportedFileType]):
-        raise HTTPException(status_code=400, detail="Only PDF, DOCX, CSV and PPTX files are allowed")
+    if not any([file.filename.endswith(file_type.value) for file_type in SupportedFileType]):
+        raise HTTPException(status_code=400, detail="Only PDF, DOCX, CSV, PPTX, TXT and HTML files are allowed")
 
     pdf_metadata = await pdf_service.upload_and_process(file, db)
 
