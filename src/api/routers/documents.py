@@ -6,8 +6,10 @@ from typing import List
 from ..dependencies import get_db, get_document_service
 from ..models import PDFUploadResponse, PDFListItem
 from ..services.document_service import DocumentService
+from ...core.documents import SupportedFileType
 
 router = APIRouter(prefix="/api/v1/pdfs", tags=["pdfs"])
+
 
 @router.post("/upload", response_model=PDFUploadResponse)
 async def upload_pdf(
@@ -15,9 +17,12 @@ async def upload_pdf(
     db: Session = Depends(get_db),
     pdf_service: DocumentService = Depends(get_document_service)
 ):
+    # Adding more files type
     """Upload and process a PDF file."""
-    if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    # if not file.filename.endswith('.pdf'):
+    if not any([file.filename.endswith(file.value) for file in SupportedFileType]):
+        raise HTTPException(status_code=400, detail="Only PDF, DOCX, CSV and PPTX files are allowed")
 
     pdf_metadata = await pdf_service.upload_and_process(file, db)
 
@@ -27,6 +32,7 @@ async def upload_pdf(
         collection_name=pdf_metadata.collection_name,
         doc_count=pdf_metadata.doc_count,
         page_count=pdf_metadata.page_count,
+        doc_type= pdf_metadata.doc_type,
         upload_timestamp=pdf_metadata.upload_timestamp
     )
 

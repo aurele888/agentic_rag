@@ -11,6 +11,7 @@ class PDFUploadResponse(BaseModel):
     collection_name: str
     doc_count: int
     page_count: int
+    doc_type: str
     upload_timestamp: datetime
 
 class PDFListItem(BaseModel):

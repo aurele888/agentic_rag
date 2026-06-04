@@ -1,6 +1,7 @@
 """Configuration settings for FastAPI application."""
 from pydantic_settings import BaseSettings
 from pathlib import Path
+from typing import List, Set
 
 class Settings(BaseSettings):
     """Application settings."""
@@ -9,6 +10,7 @@ class Settings(BaseSettings):
     PROJECT_ROOT: Path = Path(__file__).parent.parent.parent
     PDF_STORAGE_DIR: str = "data/pdfs/uploads"
     VECTOR_DB_DIR: str = "data/vectors"
+    SUPPORTED_FILES_EXTENSION : List[str] = ['.pdf', '.docx', '.pptx', '.csv']
     LANGUAGE : str = "english"
 
     # Database

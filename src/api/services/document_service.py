@@ -15,7 +15,7 @@ import sqlite3
 from docling.document_converter import DocumentConverter
 from langchain_community.document_loaders import PyPDFLoader
 
-from ...core.documents import DocumentProcessor
+from ...core.documents import DocumentProcessor, SupportedFileType
 from ...core.embeddings import VectorStore
 from ..database import DocumentMetadata, engine
 from ..services.llm_service import LlmService
@@ -142,9 +142,7 @@ class DocumentService:
             numeric_ratio = numeric_cells_count / total_cells if total_cells > 0 else 0
 
             logger.info(f"Sheet '{sheet_name}' -> Avg Length: {avg_char_length:.1f} chars | Numeric Ratio: {numeric_ratio:.2%}")
-
             is_text_heavy = avg_char_length > 40 or (numeric_ratio < 0.05 and avg_char_length > 20)
-
             table_name = f"{base_name}_{sheet_name.lower()}"
 
             
@@ -257,17 +255,18 @@ class DocumentService:
 
         # Generate unique ID
         pdf_id = self._generate_pdf_id(file.filename)
-
         # Save file
         file_path = self.storage_dir / f"{pdf_id}_{file.filename}"
         with open(file_path, "wb") as f:
             content = await file.read()
             f.write(content)
 
-        # Process PDF
-        documents = self.doc_processor.load_pdf(file_path)
+        # Process Document
+        current_document_type = [file.name for file in SupportedFileType if file.value == Path(file_path.suffix)]
+        documents = self.doc_processor.load_document(file_path)
         chunks = self.doc_processor.split_documents(documents)
 
+    
         # Add metadata to chunks
         for i, chunk in enumerate(chunks):
             chunk.metadata.update({
@@ -295,7 +294,8 @@ class DocumentService:
             page_count=len(documents),
             is_sample=False,
             file_path=str(file_path),
-            keywords = keywords
+            doc_type = current_document_type[0],
+            keywords = keywords,
         )
 
         db.add(pdf_metadata)

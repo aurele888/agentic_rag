@@ -35,7 +35,7 @@ class DocumentMetadata(Base):
     page_count = Column(Integer, nullable=False)
     is_sample = Column(Boolean, default=False)
     file_path = Column(String)
-    doc_type = Column(DateTime, nullable=False)
+    doc_type = Column(String, nullable=False)
     keywords = Column(String)
 
 
