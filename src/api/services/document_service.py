@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+import numpy as np
 from typing import List, Optional
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
@@ -101,7 +102,7 @@ class DocumentService:
         return keywords
     
 
-    def adaptive_excel_ingest(file_path: str) -> Dict[str, Dict[str, str]]:
+    def adaptive_excel_ingest(file_path: str, db_path: str) -> Dict[str, Dict[str, str]]:
         """
         Analyzes an Excel file during ingestion and dynamically routes it to either
         the SQL database or the text vector store based on its layout and context density.
