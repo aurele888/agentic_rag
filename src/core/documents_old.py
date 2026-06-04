@@ -5,9 +5,10 @@ from datetime import datetime
 import pdfplumber
 from typing import List, Any
 import streamlit as st
-from src.embeddings import EmbeddingsStore
-from src.query_router import QueryRouter
+from src.core.embeddings_old import EmbeddingsStore
+from src.core.query_router import QueryRouter
 from concurrent.futures import ThreadPoolExecutor
+
 
 PERSIST_DIRECTORY = os.path.join("data", "vectors")
 logger = logging.getLogger(__name__)
@@ -17,8 +18,8 @@ class DocumentIngestion:
     session_state = None
     emb_store = None
     query_router : QueryRouter = QueryRouter()
+    
     # Create docuemts keywords here and store it
-
     def __init__(self, session_state, emb_model_name = "nomic-embed-text"):
 
         DocumentIngestion.session_state = session_state
@@ -50,7 +51,7 @@ class DocumentIngestion:
                     DocumentIngestion.query_router.ingest_document,
                     path,
                     )
-            # Create a vector store from the documen
+            # Create a vector store from the document
             if DocumentIngestion.emb_store:
                 future2 = executor.submit(
                     DocumentIngestion.emb_store.create_vector_db, 
@@ -81,24 +82,23 @@ class DocumentIngestion:
             logger.info(f"PDF stored in session state with {len(vector_db.get()['documents'])} chunks")
 
 
-    @staticmethod
-    @st.cache_data
-    def extract_all_pages_as_images(file_upload) -> List[Any]:
-        """
-        Extract all pages from a PDF file as images.
+    # @staticmethod
+    # def extract_all_pages_as_images(file_upload) -> List[Any]:
+    #     """
+    #     Extract all pages from a PDF file as images.
 
-        Args:
-            file_upload (st.UploadedFile): Streamlit file upload object containing the PDF.
+    #     Args:
+    #         file_upload (st.UploadedFile): Streamlit file upload object containing the PDF.
 
-        Returns:
-            List[Any]: A list of image objects representing each page of the PDF.
-        """
-        logger.info(f"Extracting all pages as images from file: {file_upload.name}")
-        pdf_pages = []
-        with pdfplumber.open(file_upload) as pdf:
-            pdf_pages = [page.to_image().original for page in pdf.pages]
-        logger.info("PDF pages extracted as images")
-        return pdf_pages
+    #     Returns:
+    #         List[Any]: A list of image objects representing each page of the PDF.
+    #     """
+    #     logger.info(f"Extracting all pages as images from file: {file_upload.name}")
+    #     pdf_pages = []
+    #     with pdfplumber.open(file_upload) as pdf:
+    #         pdf_pages = [page.to_image().original for page in pdf.pages]
+    #     logger.info("PDF pages extracted as images")
+    #     return pdf_pages
 
 
     @staticmethod

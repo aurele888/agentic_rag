@@ -18,6 +18,7 @@ sentence-transformers==3.0.0
 scikit-learn
 Pillow
 numpy==1.26.4
+numpy
 streamlit
 jupyter
 opencv-python==4.8.0.76
@@ -25,3 +26,7 @@ rank_bm25
 langchain-openai
 watchdog
 keybert
+tensorrt
+docling==2.96.0
+#open_webui
+#setuptools==81.0.0

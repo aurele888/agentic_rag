@@ -1,6 +1,6 @@
 import logging, copy, os
 from typing import Dict, List
-from src.prompt import PromptManager
+from src.core.prompt import PromptManager
 from langchain_ollama import ChatOllama
 from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 from langchain_core.output_parsers import StrOutputParser
@@ -9,7 +9,7 @@ from langchain_classic.retrievers.document_compressors import LLMChainExtractor
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.query_router import QueryRouter
+from src.core.query_router import QueryRouter
 import concurrent.futures
 from langchain_core.prompts import (
     ChatPromptTemplate, 
@@ -39,6 +39,7 @@ class RagLogic:
             top_p=0.95, 
             top_k=20
             )
+        
         logger.info(f"Using {selected_model} for chat model")
         self.query_router : QueryRouter = QueryRouter(model_name=selected_model)
         logger.info(f"Using {selected_model} for router model")
@@ -73,6 +74,7 @@ class RagLogic:
         if chat_history:
             formated_chat_history = "\n".join([f"{chat.type.capitalize()}: {chat.content}" 
                             for chat in chat_history if chat.type.capitalize() != "system"])
+            
             # Removing curly brace to prevent potential Langchain prompttemplate processing error 
             return formated_chat_history.replace("{", "").replace("}", "")
         return None
@@ -161,13 +163,15 @@ class RagLogic:
 
         # Multithreading of the retrieval task to reduce latency
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(
+            futures = {
+                executor.submit(
                 self.retrieve_doc, 
                 pdf_id, 
                 pdf_data, 
                 config, 
                 QUERY_PROMPT, 
-                question) : pdf_id for pdf_id, pdf_data in pdfs_dict.items() if pdf_data['name'] in router_file_match}
+                question) : pdf_id for pdf_id, pdf_data in pdfs_dict.items() if pdf_data['name'] in router_file_match
+                }
             for future in concurrent.futures.as_completed(futures):
                 try:
                     results = future.result()

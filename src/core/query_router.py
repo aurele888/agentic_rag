@@ -12,13 +12,15 @@ from sentence_transformers import SentenceTransformer
 from keybert import KeyBERT
 import torch
 from functools import lru_cache
-from src.prompt import PromptManager
-from src.utils import detect_device
+from src.core.prompt import PromptManager
+from src.core.utils import detect_device
 
 
 PERSIST_DIRECTORY = os.path.join("data", "vectors")
 logger = logging.getLogger(__name__)
 
+
+# TO-DO : Add to ingest_document() method,  a logic for the file type (.pdf, .xlsx, or other free forms textual documents)
 
 class QueryRouter:
     """
@@ -34,6 +36,7 @@ class QueryRouter:
         self.model_name = model_name
         self.max_workers = max_workers
         self.threshold = 0  # Default: BM25 scores are negative; -1.0 is a solid match
+        
         # Initialize with structured output for fast parsing
         self.query_gen_model = ChatOllama(
             model=model_name,
@@ -91,11 +94,13 @@ class QueryRouter:
             conn.commit()
 
 
+    # TO-DO : Add a logic for the file type (.pdf, .xlsx, or other free forms textual documents)
     def ingest_document (self, file_path: str):
         """Extracts keywords and upserts into the FTS5 virtual table."""
+
         loader = PyPDFLoader(file_path)
         pages = loader.load()
-        logger.info("Ingesting document {file_path}")
+        logger.info(f"Ingesting document {file_path}")
         if len(pages) <=10:
             text = " ".join([p.page_content for p in pages if p])
         else:
@@ -225,9 +230,9 @@ class QueryRouter:
             logger.info("Entire query logs have been cleared.")
 
 
-# if __name__== "__main__":
+if __name__== "__main__":
   
-#     q_router = QueryRouter()
-#     q_router.batch_ingest("/Users/aurele/Desktop/test/")
-#     logger.info(q_router.route("What is instance normalisation ?"))
+    q_router = QueryRouter()
+    q_router.batch_ingest("/Users/aurele/Desktop/test/")
+    logger.info(q_router.route("What is instance normalisation ?"))
     

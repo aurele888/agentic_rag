@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, Any, Union, List, Dict
+from typing import Tuple, Any, Union, List, Dict, Optional
 from threading import Thread
 import streamlit as st
 import numbers
@@ -53,7 +53,88 @@ class DownloadModels(Thread):
             self.return_value=True
 
 
-class LoadReRanker(Thread):
+class ReRanker:
+    """
+    Cross-Encoder as a re-ranker model with resilient fallback handling.
+    """
+    def __init__(self, model_name):
+        
+        try:
+            device = detect_device()
+            self.model = CrossEncoder(
+                model_name,
+                device = device["name"],
+                trust_remote_code = True
+                )
+            
+        except OSError as e:
+            logger.error(f"Failed to load model from disk or HuggingFace Hub: {e}")
+            raise RuntimeError(f"Could not load CrossEncoder model '{model_name}' due to path/network error.") from e
+        except Exception as e:
+            logger.error(f"Unexpected initialization crash: {e}")
+            raise
+        
+        try:
+            # Convert to brain floating point to speed up inference
+            self.model.model.to(dtype=torch.bfloat16)
+            logger.info("Successfully cast model parameters to torch.bfloat16")
+        except (RuntimeError, TypeError) as e:
+            # Handle hardware limitations cleanly by falling back to default float32
+            logger.warning(f"bfloat16 precision not natively supported by hardware, falling back to float32. Error: {e}")
+            self.model.model.to(dtype=torch.float32)
+        
+        try:
+            logger.info(f"Compiling PyTorch model using device: {device['name']}")
+            # Use torch.compile to speed up inference
+            if device["name"] in ["mps", "cuda"]:
+                self.model.model = torch.compile(self.model.model, mode="reduce-overhead")
+            else:
+                self.model.model = torch.compile(self.model.model, backend="inductor")
+        except (RuntimeError, AttributeError, ImportError) as e:
+            # If the OS or PyTorch version doesn't support compilation, skip it entirely
+            logger.warning(f"torch.compile failed or is unsupported on this system. Performance will be un-optimized. Error: {e}")
+            # Do nothing else, self.model.model remains uncompiled and perfectly functional
+        
+
+
+    def get_ranked_document(
+            self, 
+            query_documents: List[Tuple[str, str]] = None, 
+            sources : List[Dict[str,str]] = None,
+            ) -> Optional[List[Tuple[float, Tuple[str, str], Dict[str, str]]]]:
+        logger.info("Re-ranking retrieved documents")
+
+        if not query_documents or not sources:
+            logger.warning("")
+            return None
+        
+        if len(query_documents) != len(sources):
+            error_msg = f"Length mismatch! query_documents has {len(query_documents)} items, but sources has {len(sources)} items."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        try:
+            scores = self.model.predict(query_documents)
+            logger.info(f"Re-rank retrieved documents score : {scores}")
+            scored_documents = sorted(zip(scores, query_documents, sources), key=lambda x : x[0], reverse= True )
+            return scored_documents 
+        except torch.cuda.OutOfMemoryError as e:
+            logger.error("GPU ran out of VRAM during re-ranking calculation!")
+            # Fallback action: Clear GPU cache immediately to prevent application freeze
+            torch.cuda.empty_cache()
+            raise RuntimeError("Hardware resource exhaustion: CUDA Out of Memory.") from e
+
+        except (ValueError, TypeError) as e:
+            logger.error(f"Inference failed due to bad data inputs or malformed text arrays: {e}")
+            raise
+
+        except Exception as e:
+            # Catches tricky compilation run-time anomalies on the very first execution pass
+            logger.error(f"An unexpected graph or execution error occurred during prediction pass: {e}")
+            raise
+        
+        
+class LoadReRanker_old(Thread):
 
     def __init__(self, model_name):
         super().__init__()
@@ -87,6 +168,8 @@ class LoadReRanker(Thread):
                 scored_documents = sorted(zip(scores, query_documents, sources), key=lambda x : x[0], reverse= True )
                 return scored_documents 
             return None
+
+
 
 class LoadModelsThread(Thread):
     def __init__(self, client, model_name):
@@ -156,6 +239,7 @@ def detect_device():
         name = "cpu"
         logger.info("No GPU detected, using CPU")
     return {"device": device, "name": name}
+
 
 def extract_model_names(models_info: Any) -> Dict[str,Tuple[str, ...]]:
     """

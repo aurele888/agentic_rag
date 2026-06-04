@@ -12,6 +12,8 @@ class PromptManager(BaseModel):
     
     Original question: {question}"""
 
+    # TO-DO -- Add step 7 : If the provided context does not include any documents, state it then proceed using your parametric 
+    # memory.
     ROUTER_RETRIEVAL_PROMPT_TEMPLATE :str = """Answer the question based ONLY on the following context from one or multiple 
         documents. Please only provide HIGHLY relevant information and do not hallucinate, or make up content.
         Each section is marked with its source document. And, each document start with its source name: 'Source:'.  
@@ -23,7 +25,7 @@ class PromptManager(BaseModel):
         4. Ensure you cite the source document name for each piece of information
         5. If information comes from multiple sources, mention all relevant sources
         6. If sources contradict, note the discrepancy and cite both sources
-        
+
         Context:
         {context}
 

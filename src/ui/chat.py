@@ -8,14 +8,14 @@ import logging
 import os
 import ollama
 from pathlib import Path
-from src.documents import DocumentIngestion
-from src.embeddings import PERSIST_DIRECTORY
-from src.rag import RagLogic
+from src.core.documents_old import DocumentIngestion
+from src.core.embeddings_old import PERSIST_DIRECTORY
+from src.core.rag_old import RagLogic
 from langchain_core.messages import (
     AIMessage, 
     SystemMessage,
     )  
-from src.utils import (
+from src.core.utils import (
     render_config, 
     extract_model_names, 
     generate_pdf_id, 
